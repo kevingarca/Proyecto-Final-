@@ -1,0 +1,364 @@
+---
+title: "ProyectoFinal Kevin García 2490-19-20597, Cristopher Luna 2490-17-"
+author: "Kevin García"
+date: "31/5/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r}
+require(stats)
+library(tidyverse)
+library(dplyr)
+library(ggplot2)
+library(lubridate)
+library(forecast)
+library(magrittr)
+```
+
+```{r}
+#DATASETS UTILIZADOS
+Covidworld <- read.csv('D:/Estadistica2/covid19Complete.csv')
+
+covidata <- read.csv('D:/Estadistica2/Covid-data.csv')
+```
+
+```{r}
+summary(Covidworld)
+summary(covidata)
+```
+
+```{r}
+#----------------------------------------------------------------------------
+
+#CUESTIION 1: Dataset COVIDWORLD
+#Existe afección distinta y superior de casos confirmados segun las regiones de procedencia.
+hist(Covidworld$Confirmed)
+summary(Covidworld$Confirmed)
+anova<-aov(Covidworld$Confirmed~Covidworld$WHO.Region)
+summary.aov(anova)
+boxplot(Covidworld$Confirmed~Covidworld$WHO.Region,col=c("blue","yellow"))
+
+#Y = 1millón, 2millones, 3millones, 4millones.
+
+#X = AFRICA, AMERICA, MEDITERRANEO ORIENTAL, EUROPA, SURESTE DE ASIA, PACIFICO OESTE.
+
+
+#H0: La region de procedencia no tiene influencia en los casos de coronavirus confirmados.
+
+#H1: La region de procedencia tiene una marcada influencia en los casos de coronavirus confirmados.
+
+#Conclusion: Tras evaluar las hipotesis por medio del anova, se determina que: rechazamos la H0, dejando a entender que la region si tiene que ver con la afluencia de casos. Se podría considerar que es debido al desarrollo de los distintos continentes.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+
+#----------------------------------------------------------------------------
+
+#CUESTION 2: Dataset COVIDATA
+#Determinar un pronostico de un mes con relacion a los nuevos casos. Usando series de tiempo con ARIMA.
+ggplot(covidata, aes(x = date, y = new_cases))+ geom_line() + labs(title = 'Reality') 
+
+#En la grafica se observa el incremento de nuevos casos comprendidos entre 24-02-2020 hasta 24-05-2021. Se nota que aproximadamente durante los primeros 6 o 7 meses hay un incremente suavizado, mientras que el resto de los meses se notan incrementos exorbitantes. Puede apreciarse que durante el mes 15 empieza a decrecer un poco.
+
+nuevoscasos_ts <- ts(covidata$new_cases, start = 1, frequency = 30) 
+```
+
+```{r eval=FALSE}
+nuevoscasos_ts
+```
+
+```{r}
+ajuste <- auto.arima(y = nuevoscasos_ts)
+
+summary(ajuste)
+
+prediccion <- forecast(ajuste)
+min(prediccion[['lower']])
+max(prediccion[['upper']])
+
+predict <- autoplot(prediccion)
+predict
+
+# Conclusión: En la nueva gráfica se aprecian los incremento durante un próximo mes, se haya más variación y empieza a disminuir, esto pasa segun el comportamiento final de la grafica original. Tambien se consideran el inicio de vacunacion en algunas regiones.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+
+#CUESTION 3: DATASET COVIDWORLD
+#Grafique y estudie la relacion entre casos confirmados y muertes confirmadas.
+cor(Covidworld$Confirmed,Covidworld$Deaths)
+plot(Covidworld$Confirmed,Covidworld$Deaths,col="blue")
+abline(lm(Covidworld$Deaths~Covidworld$Confirmed),col="red",lwd=2)
+#H0: Los casos de muertes irán en incremento si y solo si los casos confirmados aumentan.
+
+#H1: Los casos de muertes no se relacionan con los casos confirmados.
+
+#Conclusion: Sucede que entre más casos se confirmen, asi mismo será el auge de muertes, obviamente no serán paralelos los resultados, pero si habrá más muertes debido a más casos confirmados. No se rechaza la hipotesis nula H0.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+
+#CUESTION 4: DATASET COVIDWORLD
+#Grafique y estudie la relacion entre casos confirmados y los recuperados.
+cor(Covidworld$Confirmed,Covidworld$Recovered)
+plot(Covidworld$Confirmed,Covidworld$Recovered,col="brown")
+abline(lm(Covidworld$Recovered~Covidworld$Confirmed),col="blue",lwd=2)
+#H0: Las recuperaciones no se comparan con el incremento de nuevos casos de covid.
+
+#H1: Las recuperaciones destacan notoriamente equivalente a los nuevos casos de covid.
+
+#Conclusion: La gráfica muestra que si bien hay recuperaciones, no se comparan con el gran incremento de nuevos casos. No se rechaza la H0.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 5: DATASET COVIDWORLD
+#Grafique y estudie la relacion entre casos confirmados y los casos activos que existen.
+cor(Covidworld$Confirmed,Covidworld$Active)
+plot(Covidworld$Confirmed,Covidworld$Active,col="red")
+abline(lm(Covidworld$Active~Covidworld$Confirmed),col="blue",lwd=2)
+#H0: Los casos activos disminuyen al haber muchas recuperaciones de los casos confirmados.
+#H1: Los casos activos no presentan disminucion.
+#Conclusion: No se rechaza la H0. A través de la grafica se comprende que casos activos van en disminucion, ya que son los terceros a ser contados, despues de las muertes y los casos recuperados.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+
+#CUESTION 6: DATASET COVIDATA
+#El total de los casos interfiere con respecto al continente en que se dan.
+anova<-aov(covidata$total_cases~covidata$continent)
+summary.aov(anova)
+boxplot(covidata$total_cases~covidata$continent,col=c("yellow","red"))
+
+#H0: El total de casos es totalmente independiente al continente en el que se da.
+
+#H1: El total de casos si tiene relacion dependiendo del continente donde se da.
+
+#Conclusion: Rechazamos la H0 (hipotesis nula) lo que nos deja al descubierto que si existen razones varias por las que algunos continentes presentan cantidades notables y diferentes a otros continentes que suelen tener mejor desarrollo. Por ejemplo en una parte de america es donde se ve el gran incremento.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+
+#CUESTION 7: DATASET COVIDWORLD
+#Evaluar si la latitud de la region tiene influencia sobre el numero de casos confirmados.
+hist(Covidworld$Lat)
+summary(Covidworld$Confirmed)
+anova<-aov(Covidworld$Confirmed~Covidworld$Lat)
+summary.aov(anova)
+boxplot(Covidworld$Confirmed~Covidworld$Lat,col=c("yellow","red"))
+
+#H0: No influye la latitud sobre los casos confirmados.
+
+#H1: Si influye la latitud sobre los casos confirmados.
+
+#Conclusion: El valor de value es menor al de significancia. Por esto rechazamos la H0. Lo que da a entender que si existe alguna influencia en la latitud con relacion a los casos confirmados de covid.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 8: COVIDWORLD
+#//Relacion existente entre la longitud con los datos confirmados.
+
+hist(Covidworld$Long)
+summary(Covidworld$Confirmed)
+anova<-aov(Covidworld$Confirmed~Covidworld$Long)
+summary.aov(anova)
+boxplot(Covidworld$Confirmed~Covidworld$Long,col=c("blue","green"))
+
+#H0: Depende de la longitud que hayan incremento en los casos de covid.
+
+#H1: No existe relacion.
+
+#CONCLUSION: Aparentemente, al rechazar la H0, se deja al descubierto que no hay relacion entre la longitud con el incremento de casos. Esto apoya hasta cierto punto las creencias sobre que el virus se debilitaba en áreas cercanas al ecuador. Ya que la longitud con mas frecuencia es aprox. -135 y esto en latitud 0 da al oceano, sin embargo al buscar tierra se puede llegar hasta el norte de america, un lugar conocidamente frio.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 9: COVIDATA
+#//Estudiar la correlacion entre total_cases con total_deaths, detallar hipotesis.
+
+cor(covidata$total_cases,covidata$total_deaths)
+plot(covidata$total_cases,covidata$total_deaths,col="green")
+abline(lm(covidata$total_deaths~covidata$total_cases),col="blue",lwd=2)
+
+#CONCLUSION: En la grafica se nota que existe una elevacion de defunciones, sin embargo existe por encima el numero total de casos, por que se incluyen nuevos casos, casos de vacunados entre otros. Por que si fueran simetricos esto sería el caos total. Notando en la realidad nos damos cuenta que el numero de casos cada vez era mayor y así mismo, aunque no senejante, el numero de muertes a nivel mundial.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 10: COVIDATA
+#//Estudie el comportamietno entre la variable Continent con la variable total de casos por millon.
+hist(covidata$total_cases_per_million) 
+#Nos muestra que los casos por millon en su mayoria daban o, sim embargo se nota un incremento conforme avanza.
+summary(covidata$total_cases_per_million)
+anova<-aov(covidata$total_cases_per_million~covidata$continent)
+summary.aov(anova)
+boxplot(covidata$total_cases_per_million~covidata$continent,col=c("blue","green"))
+
+#H0: El continente con interfiere en la estadistica de casos por millon.
+
+#H1: Los casos por millos dependen del continente en cuestion.
+
+#CONCLUSION: Se rechaza la H0. Se concuerda en que dependiendo el continente se notan diferencia muy notorias. El continente con una media mayor y datos fuera del margen es Europa. 
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 11: COVIDWORLD
+#//Prediccion de casos confirmados para los siguientes 2 meses.
+library(urca)
+ggplot(Covidworld, aes(x = Date, y = Confirmed))+ geom_line() 
+
+confirm_ts <- ts(Covidworld$Confirmed, start = c(2020,01,22), frequency = 60) #60 dias = 2 meses
+```
+
+```{r eval=FALSE}
+confirm_ts
+```
+
+```{r}
+ur.kpss(confirm_ts) %>% summary()
+ur.kpss(diff(confirm_ts)) %>% summary() #Calculando el Value
+
+model <- auto.arima(y = confirm_ts)
+summary(model)
+prediction <- forecast(model)
+pronostic <- autoplot(prediction)
+pronostic
+#H0: El pronostico de casos va en aumento con el pasar de los proximos dos meses. 
+#H1: El pronostico de casos dismunuye. 
+#CONCLUSION:Rechazamos la hipotesis nula debido al Value calculado de "2e-04". Nos permite notar que la prediccion muestra algunos niveles de disminucion (puede verse en la grafica de "pronostic"), debido a que el pico más alto ya se encuentra registrado. 
+#----------------------------------------------------------------------------
+```
+
+
+```{r}
+#/////////////////////////////////////////////////////////////////////////////
+#                                                                            #
+#                                                                            #
+#     UTILIZANDO OTRO DATASET, AJENO A LOS ANALISIS ANTERIORES               #
+#                                                                            #
+#                                                                            #
+#/////////////////////////////////////////////////////////////////////////////
+
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 12: DATASET SCORES
+Scores <- read.csv('D:/Estadistica2/test_scores.csv')
+#Averiguar que sucede al relacionar la variable de gender con teaching_method
+
+tabla2 <- table(Scores$gender, Scores$teaching_method, dnn = c("Genero", "Metodo de enseñanza"))
+tabla2
+chisq.test(tabla2)
+mosaicplot(tabla2, main = deparse("Relacion entre genero y metodo de enseñanza"), col=c("orange", "yellow"))
+#H0: Existe cierta diferencia entre el metodo de enseñanza segun el genero.
+#H1: No existe diferencia entre el metodo de enseñanza segun el genero.
+
+#CONCLUSION: No rechazamos la H0. Por ende, se dice que si que existe una leve diferencia y es que el genero femenino recibe menos educacion experimental que los del genero masculino. 
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 13: DATASET SCORES
+#Estudiar la relacion entre si el entorno (school_setting) tiene que ver con tipo de escuela (school_type)
+
+tabla3 <- table(Scores$school_setting, Scores$school_type, dnn = c("Entorno", "Tipo de escuela"))
+tabla3
+chisq.test(tabla3)
+mosaicplot(tabla3, main = deparse("Relacion entre el entorno y tipo de escuela"), col=c("blue", "lightblue"))
+#H0: No existe distincion por el entorno en relacion a tipo de escuelas.
+#H1: Existe diferencia evidente segun el entorno asi habra escuelas. 
+
+#CONCLUSION: El pvalue nos hace rechazar la H0. Y notando en la grafica se ve que existe una diferencia obviamente evidente y significativa del tipo de escuelas con mayor numero en los distintos entornos.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 14: SCORES
+#Descubrir la relacion existente entre la nota pre test y el metodo de enseñanza.
+
+hist(Scores$pretest)
+summary(Scores$pretest)
+t.test(Scores$pretest~Scores$teaching_method, alternative = "two.sided")
+boxplot(Scores$pretest~Scores$teaching_method, col=c("blue","red"))
+
+#H0: No se nota distincion alguna entre el metodo de enseñanza hacia la nota preliminar.
+#H1: Se nota distincion dependiendo el metodo de enseñanza así se marcara en la nota preliminar.
+
+#CONCLUSION: Rechazamos la hipotesis nula. Y si se fija en la grafica se deja ver que los de metodo experimental tiene mayor logro que los de metodo standard.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 15: DATASET SCORES
+
+hist(Scores$posttest)
+summary(Scores$posttest)
+t.test(Scores$posttest~Scores$teaching_method, alternative = "two.sided")
+boxplot(Scores$posttest~Scores$teaching_method, col=c("blue","red"))
+
+#H0: La nota posttest no es consecuente al metodo de enseñanza.
+#H1: La nota del posttest depende totalmente del metodo de enseñanza.
+
+#CONCLUSION: Basta estudiar el pvalue y la grafica para notar que la H0 es rechazada y se percibe que se destaca muy evidentemente cuando el metodo de educacion es experimental. 
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 16: DATASET SCORES
+#//Evlaue la relacion entre el numero de alumnos(n_students) para con el entorno escolar(school_setting)
+anova <- aov(Scores$n_student~Scores$school_setting)
+summary.aov(anova)
+boxplot(Scores$n_student~Scores$school_setting, col=c("pink", "yellow", "lightblue"))
+
+#H0: En el numero de estudiantes no hay diferencia en cuanto a entorno escolar.
+#H1: Si existe mayor numero de estudiantes dependiendo el entorno escolar.
+
+#CONCLUSION: El value nos hace rechazar la H0. Se nota despues que en la grafica se refleja que en el entorno urbano existe mas demanda estudiantil y en la rural menos, evidentemente.
+#----------------------------------------------------------------------------
+```
+
+```{r}
+#----------------------------------------------------------------------------
+#CUESTION 17: DATASET SCORES
+hist(Scores$n_student)
+summary(Scores$n_students)
+t.test(Scores$n_student~Scores$gender, alternative = "two.sided")
+boxplot(Scores$n_student~Scores$gender, col=c("green","yellow"))
+
+#H0: No hay diferencias por ser mujer u hombre en cuanto al numero de estudiantes por salon.
+#H1: Si hay diferencias por ser mujer u hombre en cuanto al numero de estudiantes por salon
+
+#CONCLUSION: No rechazamos la H0. Lo que nos indica que se estima una equitatividad en los resultados. Y ya podemos dar fe de este resultado con solo consultar la grafica, la cual nos dibuja la aparente igualdad en numero entre hombres y mujeres en cuanto al numero por salon.
+#----------------------------------------------------------------------------
+```
